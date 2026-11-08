@@ -1,0 +1,7 @@
+/target
+/bench-out
+*.torrent.tmp
+.DS_Store
+*.swp
+# local, private search extensions (never committed)
+/src/search_extra.rs

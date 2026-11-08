@@ -1,0 +1,41 @@
+[package]
+name = "wisplet"
+version = "0.2.0"
+edition = "2021"
+description = "Download-only BitTorrent client that sips CPU and RAM, with a live terminal UI and an MCP server for LLMs"
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/JorgeRZT/wisplet"
+keywords = ["bittorrent", "cli", "mcp", "low-memory"]
+categories = ["command-line-utilities", "network-programming"]
+
+[lib]
+name = "wisplet"
+path = "src/lib.rs"
+
+[[bin]]
+name = "wisplet"
+path = "src/main.rs"
+
+[features]
+# Compiles src/search_extra.rs, a private file that is not part of this repository.
+extra-sources = []
+
+[dependencies]
+# Only the tokio features we actually use; current_thread runtime (no thread pool).
+tokio = { version = "1", default-features = false, features = ["rt", "net", "time", "io-util", "macros", "sync", "signal"] }
+libc = "0.2"
+sha1 = "0.10"
+fastrand = "2"
+
+[dev-dependencies]
+tempfile = "3"
+# Tests only: the black-box CLI tests need a multi-thread runtime. Not part of the binary.
+tokio = { version = "1", features = ["rt-multi-thread"] }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
