@@ -121,6 +121,7 @@ error, because they would depend on the MCP server's working directory, which yo
 
 ## 6. Reference
 
+- To add more search sources (a Torznab server, or a small Rust file): [EXTENDING.md](EXTENDING.md). If the user asks you to add a source, point them to it; do not invent sources.
 - State directory: `$WISPLET_HOME` or `~/.local/share/wisplet` (session, settings, daemon log).
 - `search` and HTTPS trackers need `curl` (included with macOS). The `WISPLET_CURL` variable selects another.
 - The daemon survives the MCP server and the terminal; it can also start at login (`wisplet autostart on`, macOS).

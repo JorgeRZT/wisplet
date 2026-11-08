@@ -11,7 +11,7 @@ and an MCP server so an LLM (Claude, …) can drive it.</p>
   <img alt="Memory" src="https://img.shields.io/badge/RAM-~20%20MiB%20downloading-brightgreen.svg">
   <img alt="Idle" src="https://img.shields.io/badge/idle-1%20MiB%20%C2%B7%200%25%20CPU-brightgreen.svg">
   <img alt="MCP" src="https://img.shields.io/badge/MCP-server-8A2BE2.svg">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-334-brightgreen.svg">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-339-brightgreen.svg">
 </p>
 
 ## Why wisplet
@@ -48,11 +48,11 @@ binary.
 - **Handy automation** — a watch folder (drop a `.torrent`, it starts) and moving finished downloads
   to another folder, globally or per torrent.
 - **Download-only** by design: it never uploads.
-- **334 automated tests**: unit, integration against fake peers, and black-box tests of the real binary
+- **339 automated tests**: unit, integration against fake peers, and black-box tests of the real binary
   on a pseudo-terminal and over MCP.
 
 **Contents:** [Installation](#installation) · [Usage](#usage) · [LLMs and MCP](#using-it-from-an-llm-claude-mcp-or-a-script) ·
-[Measurements](#figures-measured-apple-m4-macos) · [Options](#options) · [Supported](#what-is-and-is-not-supported) ·
+[Search sources](#adding-your-own-search-sources) · [Measurements](#figures-measured-apple-m4-macos) · [Options](#options) · [Supported](#what-is-and-is-not-supported) ·
 [Responsible use](#responsible-use) · [Development](#development) · [Security](#security)
 
 ## Figures (measured, Apple M4, macOS)
@@ -283,6 +283,29 @@ Things to know:
 - Availability changes: a source that does not answer simply shows `error: …` in the status and the
   rest still work.
 
+### Adding your own search sources
+
+wisplet publishes the mechanism, not a catalogue: you decide which sources to add, and you are
+responsible for what they return. There are two ways, both explained step by step in
+**[docs/EXTENDING.md](docs/EXTENDING.md)**:
+
+1. **No code — a Torznab server.** Point `WISPLET_TORZNAB_URL` at your Jackett or Prowlarr and enable
+   whatever indexers you want inside it.
+2. **A small Rust file.** A source is two functions (build the request, parse the answer) and one
+   registry entry, in a file called `src/search_extra.rs` that git ignores. Start from the working,
+   tested example:
+
+   ```sh
+   cp docs/search_extra.example.rs src/search_extra.rs   # edit the key, the URL and the parser
+   ./install.sh --features extra-sources                 # or: cargo build --release --features extra-sources
+   wisplet sources                                       # your source is listed
+   wisplet search "something" --source yourkey
+   ```
+
+   Parsers are pure functions, so you can unit-test them with a canned answer, with no network
+   (`cargo test --features extra-sources`). If the file exists but you build without the feature,
+   the installer tells you instead of silently leaving your sources out.
+
 ### Download speed
 
 What most influences speed is how many peers will actually send you data, and wisplet never
@@ -425,7 +448,7 @@ responsibility and may be illegal where you live.
 ## Development
 
 ```sh
-cargo test                 # the whole suite (334 tests, ~1 min)
+cargo test                 # the whole suite (339 tests, ~1 min)
 cargo clippy --all-targets # no warnings
 scripts/bench.sh           # measure CPU and RAM (see docs/PERFORMANCE.md)
 ```

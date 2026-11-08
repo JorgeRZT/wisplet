@@ -69,6 +69,12 @@ if [ -n "$FROM" ]; then
 else
   command -v cargo >/dev/null 2>&1 || die "Rust is required but 'cargo' was not found.
 Install it with:  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh"
+  if [ -f "${ROOT}/src/search_extra.rs" ]; then
+    case ",${FEATURES}," in
+      *,extra-sources,*) ;;
+      *) echo "note: src/search_extra.rs exists but is NOT being compiled in; add --features extra-sources to include your own search sources." ;;
+    esac
+  fi
   echo "Building ${NAME} (release)..."
   (cd "$ROOT" && cargo build --release --bin "$NAME" ${FEATURES:+--features "$FEATURES"})
   SOURCE="${ROOT}/target/release/${NAME}"

@@ -18,7 +18,8 @@ name = "wisplet"
 path = "src/main.rs"
 
 [features]
-# Compiles src/search_extra.rs, a private file that is not part of this repository.
+# Compiles src/search_extra.rs: your own search sources (see docs/EXTENDING.md). The file is not
+# part of this repository.
 extra-sources = []
 
 [dependencies]

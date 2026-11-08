@@ -286,3 +286,75 @@ fn nothing_to_migrate_means_no_noise() {
     assert!(o.status.success(), "{}", text(&o));
     assert!(!text(&o).contains("previous installation"), "{}", text(&o));
 }
+
+// ------------------------------------------------------------------ the build path (fake cargo)
+
+/// A project directory containing a copy of `install.sh` and a fake `cargo` that records its
+/// arguments and "builds" by copying the real test binary into `target/release/`.
+fn fake_project(with_extra_file: bool) -> (tempfile::TempDir, PathBuf, PathBuf) {
+    use std::os::unix::fs::PermissionsExt;
+    let proj = tempfile::tempdir().unwrap();
+    fs::copy(script(), proj.path().join("install.sh")).unwrap();
+    fs::create_dir_all(proj.path().join("src")).unwrap();
+    if with_extra_file {
+        fs::write(proj.path().join("src/search_extra.rs"), "// local sources").unwrap();
+    }
+    let bin_dir = proj.path().join("fakebin");
+    fs::create_dir_all(&bin_dir).unwrap();
+    let log = proj.path().join("cargo-args.txt");
+    let cargo = bin_dir.join("cargo");
+    fs::write(
+        &cargo,
+        format!(
+            "#!/bin/sh\necho \"$@\" >> '{log}'\nmkdir -p target/release && cp '{bin}' target/release/wisplet\n",
+            log = log.display(),
+            bin = BIN
+        ),
+    )
+    .unwrap();
+    fs::set_permissions(&cargo, fs::Permissions::from_mode(0o755)).unwrap();
+    (proj, bin_dir, log)
+}
+
+fn run_build(proj: &Path, bin_dir: &Path, args: &[&str]) -> Output {
+    let home = proj.join("home");
+    fs::create_dir_all(&home).unwrap();
+    Command::new("bash")
+        .arg(proj.join("install.sh"))
+        .args(args)
+        .args(["--prefix", home.join("bin").to_str().unwrap(), "--no-path", "--no-autostart"])
+        .env("HOME", &home)
+        .env("SHELL", "/bin/zsh")
+        .env("PATH", format!("{}:{}", bin_dir.display(), std::env::var("PATH").unwrap()))
+        .env_remove("WISPLET_HOME")
+        .stdin(std::process::Stdio::null())
+        .output()
+        .unwrap()
+}
+
+#[test]
+fn features_are_passed_to_the_build() {
+    let (proj, bin_dir, log) = fake_project(true);
+    let o = run_build(proj.path(), &bin_dir, &["--features", "extra-sources"]);
+    assert!(o.status.success(), "{}", text(&o));
+    let args = fs::read_to_string(&log).unwrap();
+    assert!(args.contains("build --release --bin wisplet --features extra-sources"), "{args}");
+    assert!(!text(&o).contains("is NOT being compiled in"), "no warning when the feature was requested: {}", text(&o));
+}
+
+#[test]
+fn a_plain_build_warns_when_the_local_sources_file_would_be_left_out() {
+    let (proj, bin_dir, log) = fake_project(true);
+    let o = run_build(proj.path(), &bin_dir, &[]);
+    assert!(o.status.success(), "{}", text(&o));
+    assert!(text(&o).contains("src/search_extra.rs exists but is NOT being compiled in") && text(&o).contains("--features extra-sources"), "{}", text(&o));
+    assert!(!fs::read_to_string(&log).unwrap().contains("--features"), "the build itself is unchanged");
+}
+
+#[test]
+fn a_plain_build_without_the_local_file_stays_quiet() {
+    let (proj, bin_dir, _log) = fake_project(false);
+    let o = run_build(proj.path(), &bin_dir, &[]);
+    assert!(o.status.success(), "{}", text(&o));
+    assert!(!text(&o).contains("search_extra"), "{}", text(&o));
+}

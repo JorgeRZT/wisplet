@@ -16,7 +16,8 @@
 //!
 //! Sources are entries of a small registry ([`SourceDef`]), so more can be added without touching
 //! the rest: with the `extra-sources` Cargo feature the crate also compiles `src/search_extra.rs`,
-//! a file that is *not part of this repository* (local, private extensions). HTTPS goes
+//! a file that is *not part of this repository* where you can register your own sources
+//! (see `docs/EXTENDING.md`). HTTPS goes
 //! through the system `curl` ([`crate::curl`]); plain `http://` is accepted only for a loopback
 //! Torznab endpoint. Parsing is pure (bytes in, results out) so it is unit-tested with canned answers.
 
@@ -144,6 +145,12 @@ const TORZNAB_DEF: SourceDef = SourceDef {
 #[cfg(feature = "extra-sources")]
 #[path = "search_extra.rs"]
 mod extra;
+
+// The documented example of an extension file is compiled and tested with the crate, so the
+// instructions in docs/EXTENDING.md cannot drift from the real API.
+#[cfg(test)]
+#[path = "../docs/search_extra.example.rs"]
+mod example_extension;
 
 /// Sources compiled in by the `extra-sources` feature (none in the default build).
 fn extra_sources() -> Vec<Source> {

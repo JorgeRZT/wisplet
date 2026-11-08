@@ -17,5 +17,6 @@ the JSON fields, common workflows, safety rules and error messages.
 ## Docs
 - [README](README.md): install, usage, options
 - [docs/LLM.md](docs/LLM.md): guide for models and scripts
+- [docs/EXTENDING.md](docs/EXTENDING.md): adding search sources
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): design and modules
 - [docs/PERFORMANCE.md](docs/PERFORMANCE.md): CPU, RAM and speed measurements
