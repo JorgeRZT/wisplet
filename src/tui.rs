@@ -36,6 +36,11 @@ pub trait Backend {
         None
     }
 
+    /// Show a file or folder in the system file manager (Finder on macOS).
+    fn reveal(&mut self, _path: &std::path::Path) -> Result<()> {
+        Err(Error::Failed("showing files is not available".into()))
+    }
+
     /// Download a search result (by its magnet link, or by fetching its `.torrent`).
     fn add_result(&mut self, r: &SearchResult) -> Result<Vec<String>> {
         if r.magnet.is_empty() {
@@ -511,11 +516,29 @@ impl App {
                     }
                 }
             }
+            Key::Char('f') => self.reveal_selected(b),
             Key::Char('q') => return Flow::Quit,
             Key::Char('Q') => return Flow::QuitAndStop,
             _ => {}
         }
         Flow::Continue
+    }
+
+    /// Show the selected torrent's data in the file manager (its folder if the data is not there yet).
+    fn reveal_selected(&mut self, b: &mut dyn Backend) {
+        let Some(id) = self.selected_row().map(|r| r.id) else { return };
+        let lines = match b.call(&Command::Info(id)) {
+            Ok(l) => l,
+            Err(e) => return self.fail(e.to_string()),
+        };
+        let get = |key: &str| lines.iter().find_map(|l| l.strip_prefix(key)).map(str::to_string);
+        let Some(dir) = get("directory\t") else { return self.fail("no folder known for this torrent") };
+        let dir = std::path::PathBuf::from(dir);
+        let target = get("name\t").map(|n| dir.join(n)).filter(|p| p.exists()).unwrap_or(dir);
+        match b.reveal(&target) {
+            Ok(()) => self.say(format!("Showing {}", target.display())),
+            Err(e) => self.fail(e.to_string()),
+        }
     }
 
     fn toggle_pause(&mut self, b: &mut dyn Backend) {
@@ -732,7 +755,7 @@ impl App {
 
     fn help_line(&self) -> String {
         match &self.mode {
-            Mode::Normal => " ↑↓ select · a add · / search · p pause · x remove · i info · s/w/m folders · M move · q quit · Q quit+stop".into(),
+            Mode::Normal => " ↑↓ select · a add · / search · p pause · x remove · i info · f show in Finder · s/w/m folders · M move · q quit · Q quit+stop".into(),
             Mode::Info(_) => " any key to go back".into(),
             Mode::Searching(_) => " Esc to cancel".into(),
             Mode::Results { .. } => " ↑↓ select · Enter add to downloads (then pick more) · / search again · Esc back to the list".into(),
@@ -762,6 +785,7 @@ mod tests {
         /// `None` = the backend has no search (the trait default is used).
         search: Option<SearchSetup>,
         searched: Vec<String>,
+        revealed: Vec<String>,
         cancelled: usize,
         added: Vec<String>,
         pending: Option<SearchOutcome>,
@@ -790,6 +814,11 @@ mod tests {
     }
 
     impl Backend for Fake {
+        fn reveal(&mut self, path: &std::path::Path) -> Result<()> {
+            self.revealed.push(path.display().to_string());
+            Ok(())
+        }
+
         fn start_search(&mut self, query: &str) -> Result<()> {
             match &self.search {
                 None => Err(Error::Failed("search is not available".into())),
@@ -859,7 +888,7 @@ mod tests {
                     Ok(vec![])
                 }
                 Command::Pause(_) | Command::Resume(_) => Ok(vec!["1".into()]),
-                Command::Info(_) => Ok(vec!["id\t1".into(), "name\tDebian ISO".into()]),
+                Command::Info(_) => Ok(vec!["id\t1".into(), "name\tDebian ISO".into(), "directory\t/dl".into()]),
                 _ => Ok(vec![]),
             }
         }
@@ -1043,6 +1072,21 @@ mod tests {
         assert!(screen(&a).contains("cannot create"));
         assert_eq!(f.dir, "/new/place");
         assert!(matches!(a.mode, Mode::Input(InputKind::Folder, _)));
+    }
+
+    #[test]
+    fn f_shows_the_selected_torrent_in_the_file_manager() {
+        let mut f = fake();
+        let mut a = app(&mut f);
+        press(&mut a, &mut f, "f");
+        // the fake's data does not exist on disk, so it falls back to the torrent's folder
+        assert_eq!(f.revealed, vec!["/dl".to_string()]);
+        assert!(matches!(a.mode, Mode::Normal));
+        assert!(a.notice.as_ref().is_some_and(|n| !n.error && n.text.contains("/dl")));
+        let mut empty = Fake::default();
+        let mut a = app(&mut empty);
+        press(&mut a, &mut empty, "f");
+        assert!(empty.revealed.is_empty(), "nothing selected, nothing to show");
     }
 
     #[test]

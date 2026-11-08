@@ -63,7 +63,7 @@
 | `manager` | Several torrents, session persistence, pause/resume/remove, the daemon **settings** (download, watch and completed folders), the **watch-folder scanner** and the **move on completion**. |
 | `daemon` / `protocol` | Unix-socket control server and its protocol. |
 | `cli` / `format` / `main` | Terminal interface: argument parsing, tables, subcommands. |
-| `tui` | The live interface, **pure**: `Key` decoding, the `App` state machine and the frame renderer. It reaches the daemon through a `Backend` trait, so it is tested without a terminal or a daemon. |
+| `tui` | The live interface, **pure**: `Key` decoding, the `App` state machine and the frame renderer. It reaches the daemon through a `Backend` trait, so it is tested without a terminal or a daemon. Side effects outside the daemon (search, and `f` *show in Finder*, which runs `open -R` / `xdg-open`) are also `Backend` methods with a failing default, so the tests use a fake. |
 | `term` | Unix terminal shell for `tui`: raw mode on the alternate screen (`libc` termios), `poll`-based input with a 500 ms refresh tick, window size, and restoration on exit/panic/signal. |
 | `autostart` | macOS LaunchAgent (`com.wisplet.daemon`) writer/reader; takes the home directory as a parameter and never calls `launchctl`. |
 

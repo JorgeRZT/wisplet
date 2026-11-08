@@ -37,7 +37,7 @@ memory budget and recycled, zero-copy message parsing, positional writes, hardwa
 hand-written bencode, HTTP, JSON and MCP instead of dependencies. Four direct dependencies, a ~1.2 MiB
 binary.
 
-- **Live terminal UI** — a full-screen view that refreshes by itself: select, add, pause, remove,
+- **Live terminal UI** — a full-screen view that refreshes by itself: select, add, pause, remove, show in Finder,
   search and change settings with single keys.
 - **Made for LLMs** — `wisplet mcp` is an [MCP](https://modelcontextprotocol.io) server with 13 tools
   (list, add, pause/resume/remove, search, settings…), and `--json` makes the command line
@@ -117,7 +117,7 @@ The list refreshes twice a second on its own; you never have to type a command t
   2   paused      [##........]  18.0    4.2 GiB            -         -     0  dataset.tar
 
  Removed torrent 3
- ↑↓ select · a add · / search · p pause · x remove · i info · s/w/m folders · M move · q quit · Q quit+stop
+ ↑↓ select · a add · / search · p pause · x remove · i info · f show in Finder · s/w/m folders · M move · q quit · Q quit+stop
 ```
 
 | Key | Action |
@@ -128,6 +128,7 @@ The list refreshes twice a second on its own; you never have to type a command t
 | `p` or space | Pause the selected torrent, or resume it if it is paused or failed |
 | `x` or Delete | Remove it (asks first: `y` keeps the files, `d` also deletes them) |
 | `i` or Enter | Details of the selected torrent (any key goes back) |
+| `f` | **Show in Finder**: reveal the selected torrent's files in Finder (on Linux, open its folder); falls back to its folder if nothing has been downloaded yet |
 | `s` | Change the download folder (created if missing) |
 | `w` | Set the watch folder (`off` turns it off) |
 | `m` | Set the folder completed torrents move to (`off` turns it off) |

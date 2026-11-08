@@ -463,6 +463,29 @@ impl wisplet::tui::Backend for DaemonBackend {
     fn add_result(&mut self, r: &wisplet::search::SearchResult) -> Result<Vec<String>> {
         add_search_result(r)
     }
+
+    fn reveal(&mut self, path: &std::path::Path) -> Result<()> {
+        // macOS: select the item in Finder. Elsewhere: open the containing folder.
+        let mut cmd;
+        if cfg!(target_os = "macos") {
+            cmd = std::process::Command::new("open");
+            cmd.arg("-R").arg(path);
+        } else {
+            cmd = std::process::Command::new("xdg-open");
+            cmd.arg(if path.is_dir() { path } else { path.parent().unwrap_or(path) });
+        }
+        let status = cmd
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .map_err(|e| wisplet::error::Error::Failed(format!("cannot open the file manager: {e}")))?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err(wisplet::error::Error::Failed(format!("the file manager could not show {}", path.display())))
+        }
+    }
 }
 
 #[cfg(unix)]
