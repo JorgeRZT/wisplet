@@ -91,7 +91,7 @@ pub async fn announce(url: &str, params: &AnnounceParams, limit: Duration) -> Re
 
 /// Parse BEP 23 compact IPv4 peers (6 bytes each). Trailing garbage is ignored.
 pub fn parse_compact_peers_v4(b: &[u8]) -> Vec<SocketAddr> {
-    b.chunks_exact(6)
+    b.as_chunks::<6>().0.iter()
         .filter_map(|c| {
             let port = u16::from_be_bytes([c[4], c[5]]);
             (port != 0).then(|| SocketAddr::new(IpAddr::V4(Ipv4Addr::new(c[0], c[1], c[2], c[3])), port))
@@ -101,7 +101,7 @@ pub fn parse_compact_peers_v4(b: &[u8]) -> Vec<SocketAddr> {
 
 /// Parse compact IPv6 peers (18 bytes each).
 pub fn parse_compact_peers_v6(b: &[u8]) -> Vec<SocketAddr> {
-    b.chunks_exact(18)
+    b.as_chunks::<18>().0.iter()
         .filter_map(|c| {
             let port = u16::from_be_bytes([c[16], c[17]]);
             let ip: [u8; 16] = c[..16].try_into().unwrap();

@@ -65,7 +65,7 @@ pub fn encode_get_peers(tid: &[u8], self_id: &[u8; 20], info_hash: &[u8; 20]) ->
 
 /// Compact node info: 20-byte id + 4-byte IPv4 + 2-byte port (26 bytes each).
 pub fn parse_compact_nodes(b: &[u8]) -> Vec<Node> {
-    b.chunks_exact(26)
+    b.as_chunks::<26>().0.iter()
         .filter_map(|c| {
             let port = u16::from_be_bytes([c[24], c[25]]);
             if port == 0 {
